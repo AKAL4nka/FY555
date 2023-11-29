@@ -1,0 +1,14 @@
+**.idea
+
+# Ignore all files in lecture notes
+lecture_notes/
+
+# Except
+!lecture_notes/notes.pdf
+!lecture_notes/notes.bib
+!lecture_notes/notes.tex
+
+# Ignore solution and idea in python
+python/.idea
+python/solution.py
+python/training_plot.png
