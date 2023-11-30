@@ -29,6 +29,41 @@
 \usepackage{feynmp-auto}
 \usepackage{hyperref}
 \usepackage{neuralnetwork}
+\usepackage{subcaption}
+
+% ============== Setting up tikz =========================
+
+\usepackage{tikz}
+\usetikzlibrary{calc,positioning,shadows.blur,decorations.pathreplacing,matrix,backgrounds,arrows.meta,chains}
+\usepackage{etoolbox}
+
+% For convolution
+\newcommand\numRowsK{3}
+\newcommand\numColsK{3}
+\newcommand{\K}[2]{% #1: row, #2: col
+	\edef\Kcol##1##2##3{###2}%
+	\edef\Krow##1##2##3{\noexpand\Kcol###1}%
+	\Krow
+	{1 0 1}
+	{0 1 0}
+	{1 0 1}%
+}
+
+% For maxpool
+\newcommand*{\xMin}{0}%
+\newcommand*{\xMax}{4}%
+\newcommand*{\yMin}{0}%
+\newcommand*{\yMax}{4}%
+
+\newcommand*{\xMinR}{8}%
+\newcommand*{\xMaxR}{10}%
+\newcommand*{\yMinR}{1}%
+\newcommand*{\yMaxR}{3}%
+
+\definecolor{c1}{HTML}{9ACFC6}
+\definecolor{c2}{HTML}{DABBD6}
+\definecolor{c3}{HTML}{CBDCB9}
+\definecolor{c4}{HTML}{9AC3E1}
 
 % ============== Setting up fancy headers ... =========================
 \usepackage{fancyhdr}
@@ -270,11 +305,283 @@
     	
     	One thing to consider is the issue of over-fitting, which is when your network begins learning your training data and not the underlying trend. You can detect such behavior if the accuracy or loss using the training dataset improves while it gets worse for the validation dataset. To help this you could train less or make the network small. There are other ways to deal with this like regularization which is beyond this course. In the end you can evaluate on your test data to determine how good your network performs.
     	
+    \subsection{Beyond the basics}
+    	Neural networks can be immensely powerful, and fully connected layers, also called dense layers, as described in the previous section are the backbone of that. There are however downsides of dense layers, these standard neurons. One issue is that the number of parameters can simply be too large. Another problem is that these neurons don't store any memory, in the sense they are oblivious to any previous information. There are generally many downsides of the classical feed-forward artificial neural network. In this section details regarding the architecture of different networks is described.
+    	
+    	\subsection{Deep neural networks}
+    	A subcategory of ML methods is that of deep learning (DL) methods. As the naming suggests, it has to do with learning more deep details about some system or problem. This requires more than just simple single or two-layer networks. Deep learning involves networks with thousands of parameters if not millions, like that of ChatGPT \cite{bahrini:2023}. In the context of DL methods one considers the use of deep networks or the combination of different types of networks and ML methods.
+    	
+    	When a classical artificial neural network (ANN) has three or more layers one can consider it as a deep neural network (DNN). This, arguably, is not enough to qualify the network as a DL method, but it is a step in that direction. DNNs can contain tens of layers if not even more in order to have enough parameters to model complex behavior. Having a very wide network with many neurons in each layer is one way to add degrees of freedom, but one may reduce the number of neurons per layer and have a longer network with many smaller layers. Since the layer parameters scale as the product of the number of nodes in the previous layer times the number in the current layer, one can quickly end up with a lot of parameters to train for wide networks. This fact is illustrated in Figure \ref{fig:DNN}, where the wide network in Figure \ref{fig:DNNwide} as 33 parameters compared to the narrow network in Figure \ref{fig:DNNnarrow} with 25 parameters. This includes the weight parameters, each weight parameter corresponds to a connection, plus one bias parameter from each node. Both networks have the same number of neurons, but not the same number of parameters. This is something the architect of the network has to consider in terms of what effects the width has on the output and the trainability of the network.
+    	
+    	\begin{figure}
+    		\centering
+    		\begin{subfigure}[b]{0.49\textwidth}
+    			\centering
+    			\begin{neuralnetwork}[layerspacing=10mm, height=4]
+    				\newcommand{\x}[2]{$x_#2$}
+    				\newcommand{\y}[2]{$\hat{y}_#2$}
+    				\newcommand{\hfirst}[2]{\small $a^{[1]}_#2$}
+    				\newcommand{\hsecond}[2]{\small $a^{[2]}_#2$}
+    				\inputlayer[count=1, bias=false, title=Input layer, text=\x]
+    				\hiddenlayer[count=4, bias=false, title=Layer 1, text=\hfirst] \linklayers
+    				\hiddenlayer[count=4, bias=false, title=Layer 2, text=\hsecond] \linklayers
+    				\outputlayer[count=1, title=Output layer, text=\y] \linklayers
+    			\end{neuralnetwork}
+    			\caption{A simple neural network with wide layers. This network 33 trainable parameters.}
+    			\label{fig:DNNwide}
+    		\end{subfigure}
+    		\hfill
+    		\begin{subfigure}[b]{0.49\textwidth}
+    			\centering
+    			\begin{neuralnetwork}[layerspacing=10mm, height=2]
+    				\newcommand{\x}[2]{$x_#2$}
+    				\newcommand{\y}[2]{$\hat{y}_#2$}
+    				\newcommand{\hfirst}[2]{\small $a^{[1]}_#2$}
+    				\newcommand{\hsecond}[2]{\small $a^{[2]}_#2$}
+    				\newcommand{\hthird}[2]{\small $a^{[3]}_#2$}
+    				\newcommand{\hfourth}[2]{\small $a^{[4]}_#2$}
+    				\inputlayer[count=1, bias=false, title=Input layer, text=\x]
+    				\hiddenlayer[count=2, bias=false, title=Layer 1, text=\hfirst] \linklayers
+    				\hiddenlayer[count=2, bias=false, title=Layer 2, text=\hsecond] \linklayers
+    				\hiddenlayer[count=2, bias=false, title=Layer 3, text=\hthird] \linklayers
+    				\hiddenlayer[count=2, bias=false, title=Layer 4, text=\hfourth] \linklayers
+    				\outputlayer[count=1, title=Output layer, text=\y] \linklayers
+    			\end{neuralnetwork}
+    			\caption{A simple neural network with many narrow layers. This network 25 trainable parameters.}
+    			\label{fig:DNNnarrow}
+    		\end{subfigure}
+    		\caption{Two architectures with the same number of nodes, but with a different number of parameters.}
+    		\label{fig:DNN}
+    	\end{figure}
+    	
+    	This example demonstrates the concept that wide layers cost more to train, as you have more parameters to train. For many applications, a DNN with a sufficient number of layers can prove very successful, but the hidden layers are nothing but a black box, a common problem with neural networks. The larger the network, the harder it becomes to interpret the logic of the network, and in practice, it is generally not possible to understand the logic the network has learned.
+    	
+    	Regarding the issue of training parameters, one can consider a problem in which the input is very large. In a DNN each input is densely connected to the first layer, thus for each neuron in the first layer, one can multiply the number of weights required to process the input. Furthermore, large inputs usually require a rather large first layer to retain the information from the input layer, thus the larger the input the larger the first layer should be leading to the problem of too many parameters. This is one of the limiting factors of DNNs, together with the fact that the neurons have no memory to store information about the previous value it processed.
+    	
+    	\subsection{Convolutional Neural Networks}
+    	A solution to the large input problem is the convolutional neural network (CNN). The problem is that dense connections can result in an exploding number of parameters, which become computationally unfeasible to train. Luckily, it isn't necessary to always use dense layers and a way to reduce the number of parameters is using CNN which uses convolution and pooling to reduce the problem, while retaining key information, before handing it over to a DNN network to produce the desired output. In the case of networks such as autoencoders, one might upscale the dimension of the output to match that of the input by doing upsampling instead of pooling.
+    	
+    	In this section, the focus is the convolution and pooling used in CNNs. These networks are often used in image processing, thus, it makes sense to consider the case of a 2D input. Instead of connecting every input to every single neuron in the first layer, one can use a kernel. This means each neuron in the layer is only connected to a subspace of the full input. The size of the kernel is thus the size of the weights of each neuron, and one can still have a bias term. By having for example a three by three kernel, as shown in Figure \ref{fig:convolution}, one would end up with only 9 weights per node plus the bias instead of e.g. 49 weights if the full input is a 7x7 two dimensional input. The reduction here is limited because the input as shown in Figure \ref{fig:convolution} is not very large due to practical reasons, but consider a modern 43.2 MP picture with dimensions of 6000x7200. In this case, the convolution neuron would still have 9 weights and not 43.2 million weights as the case would be for a fully connected neuron.  
+    	
+    	\begin{figure}
+    		\centering
+    		\begin{tikzpicture}
+    			% ------- style -------
+    			\tikzset{%
+    				parenthesized/.style={%
+    					left delimiter  = (,
+    					right delimiter = ),
+    				},
+    				node distance = 10mu,
+    			}
+    			
+    			% ------- equation -------
+    			\matrix[matrix of math nodes, parenthesized] (I) {
+    				0 & 1 & 1 & 1 & 0 & 0 & 0 \\
+    				0 & 0 & 1 & 1 & 1 & 0 & 0 \\
+    				0 & 0 & 0 & 1 & 1 & 1 & 0 \\
+    				0 & 0 & 0 & 1 & 1 & 0 & 0 \\
+    				0 & 0 & 1 & 1 & 0 & 0 & 0 \\
+    				0 & 1 & 1 & 0 & 0 & 0 & 0 \\
+    				1 & 1 & 0 & 0 & 0 & 0 & 0 \\
+    			};
+    			
+    			\node (*) [right = of I] {${}\cross{}$};
+    			
+    			\newcommand\Kmatrix{}
+    			\foreach \row in {1, ..., 3} {
+    				\gdef \sep {}
+    				\foreach \col in {1, ..., 3} {%
+    					\xdef \Kmatrix {\unexpanded\expandafter{\Kmatrix}\unexpanded\expandafter{\sep}\noexpand \K{\row}{\col}}
+    					\gdef \sep { \& }
+    				}
+    				\xdef \Kmatrix {\unexpanded\expandafter{\Kmatrix}\noexpand\\}
+    			}
+    			\matrix[matrix of math nodes, parenthesized, ampersand replacement=\&] (K) [right = of *] {
+    				\Kmatrix
+    			};
+    			
+    			\node (=) [right = of K] {${}={}$};
+    			
+    			\matrix[matrix of math nodes, parenthesized] (I*K) [right = of {=}] {
+    				1 & 4 & 3 & 4 & 1 \\
+    				1 & 2 & 4 & 3 & 3 \\
+    				1 & 2 & 3 & 4 & 1 \\
+    				1 & 3 & 3 & 1 & 1 \\
+    				3 & 3 & 1 & 1 & 0 \\
+    			};
+    			
+    			% ------- highlighting -------
+    			\newcommand\rowResult{1}
+    			\newcommand\colResult{4}
+    			
+    			\begin{scope}[on background layer]
+    				\newcommand{\padding}{2pt}
+    				\coordinate (Is-nw) at ([xshift=-\padding, yshift=+\padding] I-\rowResult-\colResult.north west);
+    				\coordinate (Is-se) at ([xshift=+\padding, yshift=-\padding] I-\the\numexpr\rowResult+\numRowsK-1\relax-\the\numexpr\colResult+\numColsK-1\relax.south east);
+    				\coordinate (Is-sw) at (Is-nw |- Is-se);
+    				\coordinate (Is-ne) at (Is-se |- Is-nw);
+    				
+    				\filldraw[red,   fill opacity=.1] (Is-nw) rectangle (Is-se);
+    				\filldraw[green, fill opacity=.1] (I*K-\rowResult-\colResult.north west) rectangle (I*K-\rowResult-\colResult.south east);
+    				
+    				\draw[blue, dotted] 
+    				(Is-nw) -- (K.north west)
+    				(Is-se) -- (K.south east)
+    				(Is-sw) -- (K.south west)
+    				(Is-ne) -- (K.north east)
+    				;
+    				\draw[green, dotted] 
+    				(I*K-\rowResult-\colResult.north west) -- (K.north west)
+    				(I*K-\rowResult-\colResult.south east) -- (K.south east)
+    				(I*K-\rowResult-\colResult.south west) -- (K.south west)
+    				(I*K-\rowResult-\colResult.north east) -- (K.north east)
+    				;
+    				
+    				\draw[blue,  fill=blue!10!white] (K.north west) rectangle (K.south east);
+    				
+    				\foreach \row [evaluate=\row as \rowI using int(\row+\rowResult-1)] in {1, ..., \numRowsK} {%
+    					\foreach \col [evaluate=\col as \colI using int(\col+\colResult-1)] in {1, ..., \numColsK} {%
+    						\node[text=blue] at (I-\rowI-\colI.south east) [xshift=-.3em] {\tiny$\times \K{\row}{\col}$};
+    					}
+    				}
+    			\end{scope}
+    			
+    			% ------- labels -------
+    			\tikzset{node distance=0em}
+    			\node[below=of I] (I-label) {$I$};
+    			\node at (K |- I-label)     {$K$};
+    			\node at (I*K |- I-label)   {$I \cross K$};
+    		\end{tikzpicture}
+    		\caption{Example of convolution of input, $I$, with the kernel, $K$. The kernel is the trainable weights.}
+    		\label{fig:convolution}
+    	\end{figure}
+    	
+    	The values of the kernel acting on the input are then summed and processed with some activation function yielding the final value of the convolution neuron. The procedure is done across the outer input, but one may note that the kernel requires input from surrounding values of the input, one can not simply apply the kernel to edge values. Depending on the size of the kernel one would thus naturally get a size reduction in the convolution layer. It is however possible to apply some padding like zero-padding to pad around the edge such that the kernel can be applied around the edge such that the convolution layer retains the same size as the input.
+    	
+    	Another option in case one seeks to reduce the size of the convolution layer is to change the stride. The striding regulates the stepping which the kernel should move across the input. One can thus apply a stride of two to only compute a value for every second step. This will then quadratically reduce the size of the convolution layer.
+    	
+    	The final important thing to consider with convolution layers is the number of filters. Since you can generally reduce the number of parameters by orders of magnitudes with convolution layers, one might face an issue with information being lost as the convolution might condense the problem with information loss. To compensate one can have multiple filters in convolution layers, in this case, one essentially repeat the convolution process as described in Figure \ref{fig:convolution}. In this way, each point of the input is compiled multiple times with different weights that can be trained to capture different information about each point. For, example the filters might each capture some color value.
+    	
+    	Overall, the convolution layer helps to massively reduce the number of parameters, but one should consider additional hyperparameters such as filter number, kernel size, padding and stride.
+    	
+    	Another operation relevant to CNNs is that of pooling. In practice, this is a layer, but it doesn't add any new trainable parameters. It provides a systematical method to merge output values of the previous layer to decrease the number of parameters passed forward in the network as shown in Figure \ref{fig:maxpool} with max pooling.
+    	
+    	\begin{figure}
+    		\centering
+    		\begin{tikzpicture}
+    			\fill [c1] (0, 0) rectangle (2, 2);
+    			\fill [c2]   (2, 0) rectangle (4, 2);
+    			\fill [c3] (0, 2) rectangle (2, 4);
+    			\fill [c4]   (2, 2) rectangle (4, 4);
+    			
+    			\fill [c1]  (8, 1) rectangle (9, 2);
+    			\fill [c2]   (9, 1) rectangle (10, 2);
+    			\fill [c3]  (8, 2) rectangle (9, 3);
+    			\fill [c4]   (9, 2) rectangle (10, 3);
+    			
+    			\foreach \i in {\xMin,...,\xMax} {
+    				\draw [very thin,gray] (\i,\yMin) -- (\i,\yMax)  node [below] at (\i,\yMin) {};
+    			}
+    			\foreach \i in {\yMin,...,\yMax} {
+    				\draw [very thin,gray] (\xMin,\i) -- (\xMax,\i) node [left] at (\xMin,\i) {};
+    			}
+    			
+    			\foreach \i in {\xMin,2,...,\xMax} {
+    				\draw [thick,gray] (\i,\yMin) -- (\i,\yMax)  node [below] at (\i,\yMin) {};
+    			}
+    			\foreach \i in {\yMin,2,...,\yMax} {
+    				\draw [thick,gray] (\xMin,\i) -- (\xMax,\i) node [left] at (\xMin,\i) {};
+    			}
+    			\node at (0.5, 0.5) {7};
+    			\node at (1.5, 0.5) {9};
+    			\node at (2.5, 0.5) {3};
+    			\node at (3.5, 0.5) {5};
+    			%
+    			\node at (0.5, 1.5) {0};
+    			\node at (1.5, 1.5) {7};
+    			\node at (2.5, 1.5) {0};
+    			\node at (3.5, 1.5) {0};
+    			%
+    			\node at (0.5, 2.5) {5};
+    			\node at (1.5, 2.5) {0};
+    			\node at (2.5, 2.5) {9};
+    			\node at (3.5, 2.5) {3};
+    			%
+    			\node at (0.5, 3.5) {9};
+    			\node at (1.5, 3.5) {2};
+    			\node at (2.5, 3.5) {9};
+    			\node at (3.5, 3.5) {6};
+    			
+    			\draw[draw=black,line width=5pt,-{Latex[length=5mm]}] (4.5, 2)  -- (7.5,2);
+    			\node[font=\footnotesize\bfseries] at (6, 2.5) {$\mathbf{2\times 2}$ max pooling};
+    			
+    			\foreach \i in {\xMinR,...,\xMaxR} {
+    				\draw [thick,gray] (\i,\yMinR) -- (\i,\yMaxR)  node [below] at (\i,\yMinR) {};
+    			}
+    			\foreach \i in {\yMinR,...,\yMaxR} {
+    				\draw [thick,gray] (\xMinR,\i) -- (\xMaxR,\i) node [left] at (\xMinR,\i) {};
+    			}
+    			
+    			\node at (8.5, 1.5) {9};
+    			\node at (9.5, 1.5) {5};
+    			\node at (8.5, 2.5) {9};
+    			\node at (9.5, 2.5) {9};
+    			
+    			\draw [decorate,decoration={brace,amplitude=4pt},xshift=-2pt,yshift=0pt]
+    			(0,2) -- (0,4) node [black,midway,xshift=-0.3cm] {\footnotesize $2$};
+    			
+    			\draw [decorate,decoration={brace,amplitude=4pt},xshift=0pt,yshift=2pt]
+    			(0,4) -- (2,4) node [black,midway,yshift=+0.3cm] {\footnotesize $2$};
+    		\end{tikzpicture}
+    		\caption{Example of using max pooling with a pool size of two and a stride value of two.}
+    		\label{fig:maxpool}
+    	\end{figure}
+    	
+    	There are a few different ways to do the pooling such as min, max and average pooling. In the case of max pooling one reduces the pool size to a single value by selecting the maximum value in the given pool as shown in Figure \ref{fig:maxpool}. In this example the pool size is two, thus a $2\cross2$ pool is considered and the highest value is selected. Since the stride is of value two, then one skips one ahead before creating another pool. Had the stride been of value one, then there would be overlap between the pools, but it might be desirable to choose such a value. As with the convolution layer one can also add padding to a pooling layer. The pooling layers generally have pool size, stride and padding as hyperparameters.
+    	
+    	\subsection{Recurrent neural networks}
+    	In certain applications such as speech recognition, and other cases with time dependence, the previous input value may be correlated with the subsequent value. This is something a usual DNN cannot take into account at the neuron level. This requires the neuron to have some memory. To achieve this one can make use of recurrent neurons to make recurrent neural networks (RNN) \cite{schmidt:2019}.
+    	
+    	
+    	The simplest way to incorporate memory is to modify the neuron to store the previous output and include it in the current input. In this way, the historical output is used for the current evaluation in the neuron. This concept of recurrent neurons is illustrated in Figure \ref{fig:recurrent-node}.
+    	
+    	\begin{figure}
+    		\centering
+    		\begin{tikzpicture}[item/.style={circle,draw,thick,align=center},
+    			itemc/.style={item,on chain,join}]
+    			\begin{scope}[start chain=going right,nodes=itemc,every
+    				join/.style={-latex,very thick},local bounding box=chain]
+    				\path node (A0) {$A$} node (A1) {$A$} node (A2) {$A$} node[xshift=2em] (At)
+    				{$A$};
+    			\end{scope}
+    			\node[left=1em of chain,scale=2] (eq) {$=$};
+    			\node[left=2em of eq,item] (AL) {$A$};
+    			\path (AL.west) ++ (-1em,2em) coordinate (aux);
+    			\draw[very thick,-latex,rounded corners] (AL.east) -| ++ (1em,2em) -- (aux) 
+    			|- (AL.west);
+    			\foreach \X in {0,1,2,t} 
+    			{\draw[very thick,-latex] (A\X.north) -- ++ (0,2em)
+    				node[above,item,fill=red!10] (h\X) {$h_\X$};
+    				\draw[very thick,latex-] (A\X.south) -- ++ (0,-2em)
+    				node[below,item,fill=green!10] (x\X) {$x_\X$};}
+    			\draw[white,line width=0.8ex] (AL.north) -- ++ (0,1.9em);
+    			\draw[very thick,-latex] (AL.north) -- ++ (0,2em)
+    			node[above,item,fill=red!10] {$h_t$};
+    			\draw[very thick,latex-] (AL.south) -- ++ (0,-2em)
+    			node[below,item,fill=green!10] {$x_t$};
+    			\path (x2) -- (xt) node[midway,scale=2,font=\bfseries] {\dots};
+    		\end{tikzpicture}
+    		\caption{Illustration of recurrent neurons using the previous output as input for the current node computation.}
+    		\label{fig:recurrent-node}
+    	\end{figure}
+    	
+    	One of the limitations of the simple recurrent neuron is that it only takes into account the previous output. This means we are limited to short-term memory. Using more complex logic it is possible to achieve long-term memory, and for this one can use long short-term memory (LSTM) layers. These layers a significantly more complex and compute-intensive, but the long term cells in these layers are capable of storing information long-term. Such models are useful in the case where there are long-term memory is needed to obtain the correct prediction.
     	
 % -------------------------------------------------------------------
 % Bibliography
 % -------------------------------------------------------------------
 \bibliographystyle{plain} % We choose the "plain" reference style
-\bibliography{main} % Entries are in the refs.bib file
+\bibliography{notes} % Entries are in the refs.bib file
 
 \end{document}
