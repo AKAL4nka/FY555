@@ -1,7 +1,7 @@
 **.idea
 
 # Ignore all files in lecture notes
-lecture_notes/
+lecture_notes/*
 
 # Except
 !lecture_notes/notes.pdf
